@@ -1,7 +1,6 @@
 # MADS-Capstone-ui
 MADS Capstone UI module
 
-
 ### Running the UI app from CLI
 `streamlit run app.py`
 
