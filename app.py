@@ -17,8 +17,8 @@ def response_generator(response):
         yield word + " "
         time.sleep(0.05)
 
-
-st.title("Clinical Trials chatbot")
+st.title("UMSI Clinical Trials chatbot")
+st.caption("Brought to you by the RAGtime Band")
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -45,3 +45,4 @@ if prompt := st.chat_input("What are you searching for?"):
         response = st.write_stream(response_generator(res))
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": response})
+
