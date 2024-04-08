@@ -1,12 +1,10 @@
 import os
 
 import streamlit as st
-import random
 import time
 import requests as req
 from dotenv import load_dotenv
-from streamlit_modal import Modal
-import streamlit.components.v1 as components
+import asyncio
 
 load_dotenv()
 if "API_HOST" not in st.session_state:
@@ -23,25 +21,47 @@ def response_generator(response):
 def set_condition(condition):
     if condition is None or len(condition.strip()) == 0:
         return
-    api_res = req.get(f"{st.session_state.api_host}/get_most_recent_trial/{condition}").json()
+    with st.spinner(f'Looking up trials for {condition}...'):
+        api_res = req.get(f"{st.session_state.api_host}/get_trials_for_condition/{condition}").json()
+
     if api_res["detail"]["results_found"]:
-        init_prompt = f"Are you familiar with trial {api_res['detail']['nct_id']} with brief title: \"{api_res['detail']['brief_title']}?\""
-        st.session_state.init_prompt = init_prompt
+        res_for_condition = [res["nct_id"] + " - " + res["brief_title"] for res in api_res["detail"]["trials"]]
+        st.session_state["res_for_condition"] = res_for_condition
     else:
         st.warning(f"No clinical trials found for {condition}")
         return
     st.session_state["condition"] = condition
 
 
-if "condition" not in st.session_state or st.session_state["condition"] is None:
+def set_trial(trial):
+    trial_parts = trial.split(" - ")
+    trial_prompt = f"Are you familiar with trial {trial_parts[0]} with brief title: {trial_parts[1]}"
+    with st.spinner('Please wait...'):
+        req.post(f"{st.session_state.api_host}/get_response", json=trial_prompt)
+    st.session_state.current_trial = trial
+
+
+if "current_trial" not in st.session_state or st.session_state["current_trial"] is None:
     st.title("Welcome to the UMSI Clinical Trials!")
     st.markdown("""Get insights into the newest healthcare research.  
     I'm your trusty guide, here to help you explore Pfizer's latest Phase 3 Clinical Trials.  
     Simply name a condition that interests you (for example: Migraine? Leukemia? Pneumonia?)  
     I'll return the most recent trial and get ready for your questions.  
     Ready? Let's get started.""")
-    condition = st.text_input(label="Condition", placeholder="Please enter condition", label_visibility="collapsed")
-    st.button("Submit", on_click=set_condition, args=(condition,))
+
+    col1, col2 = st.columns([7, 1])
+
+    with col1:
+        condition = st.text_input(label="Condition", placeholder="Please enter condition", label_visibility="collapsed")
+    with col2:
+        st.button("Submit", on_click=set_condition, args=(condition,))
+
+    if "res_for_condition" in st.session_state:
+        st.markdown(f"""I have found **{len(st.session_state.res_for_condition)}** trials for **{condition}**.  
+                    Please select one from the dropdown list below you would like to find out more about.""")
+        trial = st.selectbox(label="Trial", options=st.session_state.res_for_condition, label_visibility="collapsed")
+        st.button("Confirm", on_click=set_trial, args=(trial,))
+
 else:
     st.title("UMSI Clinical Trials chatbot")
     st.caption("Brought to you by the RAGtime Band")
@@ -56,7 +76,8 @@ else:
             st.markdown(message["content"])
 
     # Accept user input
-    if prompt := st.chat_input() or st.session_state.init_prompt:
+    if prompt := st.chat_input(f"What would you like to ask about "
+                               f"{st.session_state.current_trial.split(' - ')[0]} ({st.session_state.condition})?"):
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
         # Display user message in chat message container
