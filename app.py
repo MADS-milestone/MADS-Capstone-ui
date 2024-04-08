@@ -36,7 +36,7 @@ def set_condition(condition):
 def set_trial(trial):
     trial_parts = trial.split(" - ")
     trial_prompt = f"Are you familiar with trial {trial_parts[0]} with brief title: {trial_parts[1]}"
-    with st.spinner('Please wait...'):
+    with st.spinner('Setting ChatBot context...'):
         req.post(f"{st.session_state.api_host}/get_response", json=trial_prompt)
     st.session_state.current_trial = trial
 
@@ -63,8 +63,8 @@ if "current_trial" not in st.session_state or st.session_state["current_trial"] 
         st.button("Confirm", on_click=set_trial, args=(trial,))
 
 else:
-    st.title("UMSI Clinical Trials chatbot")
-    st.caption("Brought to you by the RAGtime Band")
+    st.title("UMSI Clinical Trials ChatBot")
+    st.caption("Brought to you by the MADS RAGtime Band")
 
     # Initialize chat history
     if "messages" not in st.session_state:
