@@ -2,7 +2,9 @@
 MADS Capstone UI module
 
 ### Running the UI app from CLI
-`streamlit run app.py`
+> **NOTE:** run `pip install -r requirements.txt` to install dependencies  
+
+Application start command: `streamlit run app.py`
 
 ### Running in Docker
 `docker build -t streamlit .`  
